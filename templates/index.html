@@ -210,14 +210,62 @@
         }
 
         .status-dot {
-            width: 10px;
-            height: 10px;
+            width: 12px;
+            height: 12px;
             border-radius: 50%;
+            position: relative;
+            margin-right: 10px;
+        }
+
+        .status-dot::after {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+            opacity: 0.8;
+        }
+
+        .status-dot.success {
             background-color: var(--success-color);
         }
 
-        .status-dot.offline {
+        .status-dot.success::after {
+            border: 2px solid var(--success-color);
+        }
+
+        .status-dot.danger {
             background-color: var(--danger-color);
+        }
+
+        .status-dot.danger::after {
+            border: 2px solid var(--danger-color);
+        }
+
+        .text-success {
+            color: var(--success-color) !important;
+        }
+
+        .text-danger {
+            color: var(--danger-color) !important;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                opacity: 0.8;
+            }
+            70% {
+                transform: scale(1.3);
+                opacity: 0;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 0;
+            }
         }
 
         .help-text {
@@ -250,8 +298,13 @@
         <!-- Model Status -->
         <div class="model-status">
             <div class="status-indicator">
-                <div class="status-dot" id="statusDot"></div>
-                <span><strong>Model Status:</strong> <span id="modelStatus">{{ model_status }}</span></span>
+                <div class="status-dot {{ status_class }}"></div>
+                <span>
+                    <strong>Model Status:</strong>
+                    <span id="modelStatus" class="text-{{ status_class }}">
+                        {{ model_status }}
+                    </span>
+                </span>
             </div>
             <button id="retrainBtn" class="btn btn-warning">
                 <i class="fas fa-sync-alt"></i> Retrain Model
@@ -399,17 +452,21 @@
     <script src="https://cdn.datatables.net/1.10.24/js/dataTables.bootstrap5.min.js"></script>
     <script>
         $(document).ready(function() {
-            // Update status dot based on model status
-            function updateStatusDot() {
-                const status = $('#modelStatus').text();
-                const dot = $('#statusDot');
-                if (status === 'Model Loaded') {
-                    dot.removeClass('offline').addClass('online');
+            // Update status display
+            function updateStatus(status, isSuccess) {
+                const statusText = $('#modelStatus');
+                const statusDot = $('.status-dot');
+
+                statusText.text(status);
+
+                if (isSuccess) {
+                    statusText.removeClass('text-danger').addClass('text-success');
+                    statusDot.removeClass('danger').addClass('success');
                 } else {
-                    dot.removeClass('online').addClass('offline');
+                    statusText.removeClass('text-success').addClass('text-danger');
+                    statusDot.removeClass('success').addClass('danger');
                 }
             }
-            updateStatusDot();
 
             // Initialize DataTables
             var historyTable = $('#historyTable').DataTable({
@@ -541,11 +598,28 @@
                     type: 'POST',
                     success: function(response) {
                         if (response.status === 'success') {
-                            alert('Model retrained successfully!');
-                            $('#modelStatus').text('Model Loaded');
-                            updateStatusDot();
+                            updateStatus('Model Loaded', true);
+                            // Show success message
+                            const alertDiv = $('<div>')
+                                .addClass('alert alert-success alert-dismissible fade show')
+                                .html(`
+                                    <i class="fas fa-check-circle"></i> Model retrained successfully!
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                `);
+                            $('.main-header').after(alertDiv);
+
+                            // Auto-dismiss after 5 seconds
+                            setTimeout(() => alertDiv.alert('close'), 5000);
                         } else {
-                            alert('Error: ' + response.message);
+                            updateStatus('Model Not Loaded', false);
+                            // Show error message
+                            const alertDiv = $('<div>')
+                                .addClass('alert alert-danger alert-dismissible fade show')
+                                .html(`
+                                    <i class="fas fa-exclamation-circle"></i> Error: ${response.message}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                `);
+                            $('.main-header').after(alertDiv);
                         }
                     },
                     error: function() {
