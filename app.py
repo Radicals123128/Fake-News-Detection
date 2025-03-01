@@ -42,8 +42,20 @@ def allowed_file(filename):
 
 @app.route('/')
 def home():
-    model_status = 'Model Loaded' if model and vectorizer else 'Model Not Loaded'
-    return render_template('index.html', model_status=model_status)
+    try:
+        if model and vectorizer:
+            status = 'Model Loaded'
+            status_class = 'success'
+        else:
+            status = 'Model Not Loaded'
+            status_class = 'danger'
+    except Exception as e:
+        status = 'Error: ' + str(e)
+        status_class = 'danger'
+
+    return render_template('index.html',
+                         model_status=status,
+                         status_class=status_class)
 
 @app.route('/predict', methods=['POST'])
 def predict():
