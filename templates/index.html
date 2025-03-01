@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fake News Detection</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- DataTables CSS -->
+    <link href="https://cdn.datatables.net/1.10.24/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #4361ee;
+            --secondary-color: #3f37c9;
+            --success-color: #4CAF50;
+            --danger-color: #f72585;
+            --warning-color: #ff9e00;
+            --light-bg: #f8f9fa;
+            --dark-text: #2b2d42;
+            --card-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--light-bg);
+            color: var(--dark-text);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+        }
+
+        .main-header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding: 2rem 0;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border-radius: 15px;
+            box-shadow: var(--card-shadow);
+        }
+
+        .main-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: var(--card-shadow);
+            transition: transform 0.3s ease;
+            margin-bottom: 1.5rem;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card-header {
+            background-color: white;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+            border-radius: 15px 15px 0 0 !important;
+            padding: 1.5rem;
+        }
+
+        .card-body {
+            padding: 1.5rem;
+        }
+
+        .form-control {
+            border-radius: 10px;
+            padding: 0.8rem;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(67, 97, 238, 0.25);
+        }
+
+        .btn {
+            padding: 0.8rem 1.5rem;
+            border-radius: 10px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--secondary-color);
+            border-color: var(--secondary-color);
+            transform: translateY(-2px);
+        }
+
+        .nav-tabs {
+            border-bottom: none;
+            margin-bottom: 1rem;
+        }
+
+        .nav-tabs .nav-link {
+            border: none;
+            color: var(--dark-text);
+            font-weight: 500;
+            padding: 1rem 1.5rem;
+            border-radius: 10px;
+            margin-right: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .nav-tabs .nav-link:hover {
+            background-color: rgba(67, 97, 238, 0.1);
+        }
+
+        .nav-tabs .nav-link.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .result-box {
+            display: none;
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-top: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .result-box.success {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .result-box.danger {
+            background-color: var(--danger-color);
+            color: white;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .loading .spinner-border {
+            width: 3rem;
+            height: 3rem;
+        }
+
+        .confidence-bar {
+            height: 10px;
+            border-radius: 5px;
+            background-color: rgba(255,255,255,0.3);
+            margin-top: 1rem;
+        }
+
+        .confidence-value {
+            height: 100%;
+            border-radius: 5px;
+            transition: width 0.6s ease;
+        }
+
+        .table {
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .table th {
+            background-color: rgba(67, 97, 238, 0.1);
+            font-weight: 600;
+            border: none;
+        }
+
+        .table td {
+            vertical-align: middle;
+            border-color: rgba(0,0,0,0.05);
+        }
+
+        .model-status {
+            background: white;
+            border-radius: 15px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: var(--card-shadow);
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: var(--success-color);
+        }
+
+        .status-dot.offline {
+            background-color: var(--danger-color);
+        }
+
+        .help-text {
+            color: #6c757d;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease forwards;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="main-header">
+            <h1 class="main-title">
+                <i class="fas fa-shield-alt"></i> Fake News Detection System
+            </h1>
+            <p class="subtitle">Advanced AI-powered news verification tool</p>
+        </div>
+
+        <!-- Model Status -->
+        <div class="model-status">
+            <div class="status-indicator">
+                <div class="status-dot" id="statusDot"></div>
+                <span><strong>Model Status:</strong> <span id="modelStatus">{{ model_status }}</span></span>
+            </div>
+            <button id="retrainBtn" class="btn btn-warning">
+                <i class="fas fa-sync-alt"></i> Retrain Model
+            </button>
+        </div>
+
+        <!-- Main Content -->
+        <div class="card">
+            <div class="card-body">
+                <!-- Navigation Tabs -->
+                <ul class="nav nav-tabs" id="myTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="single-tab" data-bs-toggle="tab" data-bs-target="#single">
+                            <i class="fas fa-search"></i> Single Analysis
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="batch-tab" data-bs-toggle="tab" data-bs-target="#batch">
+                            <i class="fas fa-layer-group"></i> Batch Analysis
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#history">
+                            <i class="fas fa-history"></i> History
+                        </button>
+                    </li>
+                </ul>
+
+                <!-- Tab Content -->
+                <div class="tab-content" id="myTabContent">
+                    <!-- Single Analysis Tab -->
+                    <div class="tab-pane fade show active" id="single" role="tabpanel">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title mb-4">Analyze Individual News</h5>
+                                <form id="newsForm">
+                                    <div class="mb-3">
+                                        <label for="newsText" class="form-label">Enter News Text:</label>
+                                        <textarea class="form-control" id="newsText" name="news_text" rows="6" required 
+                                            placeholder="Paste the news article text here..."></textarea>
+                                        <div class="help-text">
+                                            <i class="fas fa-info-circle"></i> Enter the complete news article text for analysis
+                                        </div>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-search"></i> Analyze
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Loading Indicator -->
+                        <div class="loading">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-3">Analyzing the news content...</p>
+                        </div>
+
+                        <!-- Result Box -->
+                        <div class="result-box card">
+                            <div class="card-body">
+                                <h5 class="card-title">Analysis Result</h5>
+                                <p class="card-text" id="result"></p>
+                                <div class="confidence-bar">
+                                    <div class="confidence-value" id="confidenceBar"></div>
+                                </div>
+                                <p class="mt-2">Confidence: <strong><span id="confidence"></span>%</strong></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Batch Analysis Tab -->
+                    <div class="tab-pane fade" id="batch" role="tabpanel">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title mb-4">Batch Analysis</h5>
+                                <form id="batchForm">
+                                    <div class="mb-3">
+                                        <label for="csvFile" class="form-label">Upload CSV File:</label>
+                                        <input type="file" class="form-control" id="csvFile" accept=".csv" required>
+                                        <div class="help-text">
+                                            <i class="fas fa-info-circle"></i> File should contain one of these columns: 'text', 'content', 'body', or 'article'
+                                        </div>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-file-upload"></i> Analyze Batch
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Batch Results -->
+                        <div class="batch-results mt-4" style="display: none;">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">Batch Analysis Results</h5>
+                                    <div class="table-responsive">
+                                        <table class="table" id="batchResultsTable">
+                                            <thead>
+                                                <tr>
+                                                    <th>Text</th>
+                                                    <th>Prediction</th>
+                                                    <th>Confidence</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- History Tab -->
+                    <div class="tab-pane fade" id="history" role="tabpanel">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title mb-4">Analysis History</h5>
+                                <div class="table-responsive">
+                                    <table class="table" id="historyTable">
+                                        <thead>
+                                            <tr>
+                                                <th>Timestamp</th>
+                                                <th>Text</th>
+                                                <th>Prediction</th>
+                                                <th>Confidence</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.datatables.net/1.10.24/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.10.24/js/dataTables.bootstrap5.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            // Update status dot based on model status
+            function updateStatusDot() {
+                const status = $('#modelStatus').text();
+                const dot = $('#statusDot');
+                if (status === 'Model Loaded') {
+                    dot.removeClass('offline').addClass('online');
+                } else {
+                    dot.removeClass('online').addClass('offline');
+                }
+            }
+            updateStatusDot();
+
+            // Initialize DataTables
+            var historyTable = $('#historyTable').DataTable({
+                order: [[0, 'desc']],
+                pageLength: 10,
+                responsive: true,
+                language: {
+                    search: "<i class='fas fa-search'></i> Search:",
+                    paginate: {
+                        first: "<i class='fas fa-angle-double-left'></i>",
+                        last: "<i class='fas fa-angle-double-right'></i>",
+                        next: "<i class='fas fa-angle-right'></i>",
+                        previous: "<i class='fas fa-angle-left'></i>"
+                    }
+                }
+            });
+
+            var batchTable = $('#batchResultsTable').DataTable({
+                pageLength: 10,
+                responsive: true,
+                language: {
+                    search: "<i class='fas fa-search'></i> Search:",
+                    paginate: {
+                        first: "<i class='fas fa-angle-double-left'></i>",
+                        last: "<i class='fas fa-angle-double-right'></i>",
+                        next: "<i class='fas fa-angle-right'></i>",
+                        previous: "<i class='fas fa-angle-left'></i>"
+                    }
+                }
+            });
+
+            // Load history on tab show
+            $('#history-tab').on('shown.bs.tab', function (e) {
+                loadHistory();
+            });
+
+            // Single analysis form submission
+            $('#newsForm').on('submit', function(e) {
+                e.preventDefault();
+                $('.loading').show();
+                $('.result-box').hide();
+
+                $.ajax({
+                    url: '/predict',
+                    type: 'POST',
+                    data: $(this).serialize(),
+                    success: function(response) {
+                        $('.loading').hide();
+                        $('.result-box').show().addClass('fade-in');
+
+                        if (response.status === 'success') {
+                            $('#result').text(response.prediction);
+                            $('#confidence').text(response.confidence);
+                            $('#confidenceBar').css('width', response.confidence + '%');
+
+                            if (response.prediction === 'Fake News') {
+                                $('.result-box').removeClass('bg-success').addClass('bg-danger');
+                                $('#confidenceBar').removeClass('bg-success').addClass('bg-danger');
+                            } else {
+                                $('.result-box').removeClass('bg-danger').addClass('bg-success');
+                                $('#confidenceBar').removeClass('bg-danger').addClass('bg-success');
+                            }
+                        } else {
+                            $('#result').text('Error: ' + response.message);
+                            $('.result-box').removeClass('bg-success bg-danger').addClass('bg-warning');
+                        }
+                    },
+                    error: function() {
+                        $('.loading').hide();
+                        $('.result-box').show().addClass('fade-in bg-warning');
+                        $('#result').text('Error occurred while processing the request.');
+                    }
+                });
+            });
+
+            // Batch analysis form submission
+            $('#batchForm').on('submit', function(e) {
+                e.preventDefault();
+                var formData = new FormData();
+                formData.append('file', $('#csvFile')[0].files[0]);
+
+                $('.batch-results').hide();
+                $('.loading').show();
+
+                $.ajax({
+                    url: '/upload',
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function(response) {
+                        $('.loading').hide();
+
+                        if (response.status === 'success') {
+                            batchTable.clear();
+
+                            response.results.forEach(function(result) {
+                                batchTable.row.add([
+                                    result.text,
+                                    result.prediction,
+                                    result.confidence + '%'
+                                ]);
+                            });
+
+                            batchTable.draw();
+                            $('.batch-results').show().addClass('fade-in');
+                        } else {
+                            alert('Error: ' + response.message);
+                        }
+                    },
+                    error: function() {
+                        $('.loading').hide();
+                        alert('Error occurred while processing the batch request.');
+                    }
+                });
+            });
+
+            // Retrain model button click
+            $('#retrainBtn').on('click', function() {
+                if (!confirm('Are you sure you want to retrain the model? This may take some time.')) {
+                    return;
+                }
+
+                $(this).prop('disabled', true)
+                    .html('<i class="fas fa-sync-alt fa-spin"></i> Retraining...');
+
+                $.ajax({
+                    url: '/retrain',
+                    type: 'POST',
+                    success: function(response) {
+                        if (response.status === 'success') {
+                            alert('Model retrained successfully!');
+                            $('#modelStatus').text('Model Loaded');
+                            updateStatusDot();
+                        } else {
+                            alert('Error: ' + response.message);
+                        }
+                    },
+                    error: function() {
+                        alert('Error occurred while retraining the model.');
+                    },
+                    complete: function() {
+                        $('#retrainBtn').prop('disabled', false)
+                            .html('<i class="fas fa-sync-alt"></i> Retrain Model');
+                    }
+                });
+            });
+
+            // Function to load prediction history
+            function loadHistory() {
+                $.ajax({
+                    url: '/history',
+                    type: 'GET',
+                    success: function(history) {
+                        historyTable.clear();
+
+                        history.forEach(function(entry) {
+                            historyTable.row.add([
+                                entry.timestamp,
+                                entry.text,
+                                entry.prediction,
+                                entry.confidence + '%'
+                            ]);
+                        });
+
+                        historyTable.draw();
+                    },
+                    error: function() {
+                        alert('Error loading prediction history.');
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
