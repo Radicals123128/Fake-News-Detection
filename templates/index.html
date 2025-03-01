@@ -298,11 +298,15 @@
         <!-- Model Status -->
         <div class="model-status">
             <div class="status-indicator">
-                <div class="status-dot {{ status_class }}"></div>
+                <div class="status-dot {% if status_class %}{{ status_class }}{% else %}danger{% endif %}"></div>
                 <span>
                     <strong>Model Status:</strong>
-                    <span id="modelStatus" class="text-{{ status_class }}">
-                        {{ model_status }}
+                    <span id="modelStatus" class="text-{% if status_class %}{{ status_class }}{% else %}danger{% endif %}">
+                        {% if model_status %}
+                            {{ model_status }}
+                        {% else %}
+                            Model Not Loaded
+                        {% endif %}
                     </span>
                 </span>
             </div>
@@ -456,17 +460,30 @@
             function updateStatus(status, isSuccess) {
                 const statusText = $('#modelStatus');
                 const statusDot = $('.status-dot');
+                const statusClass = isSuccess ? 'success' : 'danger';
 
-                statusText.text(status);
+                // Update text with fallback
+                statusText.text(status || 'Model Not Loaded');
 
-                if (isSuccess) {
-                    statusText.removeClass('text-danger').addClass('text-success');
-                    statusDot.removeClass('danger').addClass('success');
-                } else {
-                    statusText.removeClass('text-success').addClass('text-danger');
-                    statusDot.removeClass('success').addClass('danger');
-                }
+                // Update classes
+                statusText.removeClass('text-success text-danger')
+                         .addClass(`text-${statusClass}`);
+
+                statusDot.removeClass('success danger')
+                        .addClass(statusClass);
+
+                // Add animation
+                statusDot.css('animation', 'none');
+                statusDot[0].offsetHeight; // Trigger reflow
+                statusDot.css('animation', '');
             }
+
+            // Initialize status on page load
+            const initialStatus = $('#modelStatus').text().trim();
+            updateStatus(
+                initialStatus,
+                initialStatus === 'Model Loaded'
+            );
 
             // Initialize DataTables
             var historyTable = $('#historyTable').DataTable({
@@ -597,18 +614,29 @@
                     url: '/retrain',
                     type: 'POST',
                     success: function(response) {
-                        if (response.status === 'success') {
-                            updateStatus('Model Loaded', true);
-                            // Show success message
-                            const alertDiv = $('<div>')
-                                .addClass('alert alert-success alert-dismissible fade show')
-                                .html(`
-                                    <i class="fas fa-check-circle"></i> Model retrained successfully!
-                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                                `);
-                            $('.main-header').after(alertDiv);
+                        // Remove any existing alerts
+                        $('.alert').alert('close');
 
-                            // Auto-dismiss after 5 seconds
+                        if (response.status === 'success') {
+                            // Update status
+                            updateStatus('Model Loaded', true);
+
+                            // Show success message with animation
+                            const alertDiv = $('<div>')
+                                .addClass('alert alert-success alert-dismissible fade')
+                                .html(`
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-check-circle me-2"></i>
+                                        <div>
+                                            <strong>Success!</strong>
+                                            <div>Model retrained and loaded successfully.</div>
+                                        </div>
+                                        <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+                                    </div>
+                                `);
+
+                            $('.main-header').after(alertDiv);
+                            setTimeout(() => alertDiv.addClass('show'), 10);
                             setTimeout(() => alertDiv.alert('close'), 5000);
                         } else {
                             updateStatus('Model Not Loaded', false);
