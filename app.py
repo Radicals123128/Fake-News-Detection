@@ -212,6 +212,65 @@ def get_history():
         return jsonify(history)
     return jsonify([])
 
+@app.route('/history/delete', methods=['POST'])
+def delete_all_history():
+    try:
+        history_file = 'prediction_history.json'
+        if os.path.exists(history_file):
+            # Create an empty history file
+            with open(history_file, 'w') as f:
+                json.dump([], f)
+            return jsonify({
+                'status': 'success',
+                'message': 'All prediction history deleted successfully'
+            })
+        return jsonify({
+            'status': 'success',
+            'message': 'No history to delete'
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': f'Error deleting history: {str(e)}'
+        })
+
+@app.route('/history/delete/<int:index>', methods=['POST'])
+def delete_history_item(index):
+    try:
+        history_file = 'prediction_history.json'
+        if os.path.exists(history_file):
+            with open(history_file, 'r') as f:
+                history = json.load(f)
+
+            # Check if index is valid
+            if 0 <= index < len(history):
+                # Remove the item at the specified index
+                deleted_item = history.pop(index)
+
+                # Save the updated history
+                with open(history_file, 'w') as f:
+                    json.dump(history, f)
+
+                return jsonify({
+                    'status': 'success',
+                    'message': 'History item deleted successfully',
+                    'deleted_item': deleted_item
+                })
+            else:
+                return jsonify({
+                    'status': 'error',
+                    'message': f'Invalid index: {index}'
+                })
+        return jsonify({
+            'status': 'error',
+            'message': 'No history file found'
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': f'Error deleting history item: {str(e)}'
+        })
+
 @app.route('/retrain', methods=['POST'])
 def retrain_model():
     try:
